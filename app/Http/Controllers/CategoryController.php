@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class CategoryController extends Controller
 {
@@ -12,37 +13,30 @@ class CategoryController extends Controller
     public function index()
     {
         $categories = Category::all();
-        return response()->json([
-            'status'=> 'success',
-            'data'=> $categories
-        ]);
+        return Inertia::render('Category/Index', [
+                'categories' => $categories,
+            ]);
     }
-
+    
     /**
      * Show the form for creating a new resource.
      */
     public function create()
     {
-        //
+        return Inertia::render('Category/Create');
     }
 
     /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
-    {  try {
-            $validated = $request->validate([
-                'name' => 'required|string|max:255'
-            ]);
-        
-            $category = Category::create($validated);
-            return response()->json([
-                'success' => true,
-                'data' => $category,
-            ], 201);
-        } catch (\Exception $e) {
-            throw $e;
-        }
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255'
+        ]);
+    
+        $category = Category::create($validated);
+        return redirect()->route('category.index');
     }
 
     /**
@@ -76,10 +70,10 @@ class CategoryController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy($id)
     {
         $category = Category::findOrFail($id);
         $category->delete();
-        return response()->json(null, 204);
+        return redirect()->route('category.index');
     }
 }
