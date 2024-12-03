@@ -1,4 +1,9 @@
-<script class="ts">
+<script lang="ts">
+import { defineComponent } from 'vue';
+
+export default defineComponent({
+  name: 'AppNavigation',
+});
 </script>
 
 <template>
@@ -46,7 +51,7 @@
   }
   
   .content {
-    @apply flex-1 bg-zinc-50 p-6 overflow-y-auto;
+    @apply flex-1 bg-zinc-50 overflow-y-auto;
   }
   </style>
   

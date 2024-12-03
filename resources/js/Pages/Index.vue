@@ -1,15 +1,15 @@
 <script class="ts">
-import Navigation from '@/Components/Navigation.vue';
+import { AppNavigation } from '@/Components'
 </script>
 
 <template>
-  <Navigation>
-  <div class="dashboard">
+  <AppNavigation>
+    <div class="dashboard">
     <div class="header">
-      <strong class="header-title">Categories</strong>
+      <strong class="header-title">Dashboard</strong>
     </div>
   </div>
-</Navigation>
+  </AppNavigation>
 </template>
   
 
@@ -17,7 +17,7 @@ import Navigation from '@/Components/Navigation.vue';
   .dashboard {
     .header {
     @apply w-full;
-    @apply bg-zinc-200 border-2 border-zinc-300 p-4 rounded-md;
+    @apply bg-zinc-200 border-2 border-zinc-300 p-2 rounded-md;
     
     .header-title {
         @apply text-2xl font-bold;

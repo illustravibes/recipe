@@ -7,48 +7,56 @@ const showCreateModal = ref(false);
 const showDeleteModal = ref(false);
 
 const name = ref<string>('');
-const selectedCategoryId = ref<number | null>(null);
+const amount = ref<number>();
+const unit = ref<string>('');
+const selectedIngredientId = ref<number | null>(null);
 
-interface TCategory {
+interface TIngredient {
   id: number;
   name: string;
+  amount: number;
+  unit: string;
   created_at: string;
   updated_at: string;
 }
 
 defineProps({
-  categories: {
-    type: Array as PropType<TCategory[]>,
+  ingredients: {
+    type: Array as PropType<TIngredient[]>,
     default: [],
   },
 });
 
-function createCategory() {
+function createIngredient() {
   router.post(
-    route('category.store'),
-    { name: name.value },
+    route('ingredient.store'),
+    { 
+      name: name.value,
+      amount: amount.value,
+      unit: unit.value,
+     },
     {
       onSuccess: () => {
         showCreateModal.value = false;
       },
       onError: (errors: any) => {
-        console.error('Error creating category:', errors);
+        console.error('Error creating ingredient:', errors);
       },
     }
   );
 }
 
-function deleteCategory() {
-  if (!selectedCategoryId.value) return;
+function deleteIngredient() {
+  if (!selectedIngredientId.value) return;
   router.delete(
-    route('category.destroy', selectedCategoryId.value),
+    route('ingredient.destroy', selectedIngredientId.value),
     {
       onSuccess: () => {
         showDeleteModal.value = false;
-        selectedCategoryId.value = null;
+        selectedIngredientId.value = null;
       },
       onError: (errors: any) => {
-        console.error('Error deleting category:', errors);
+        console.error('Error deleting ingredient:', errors);
       },
     }
   );
@@ -59,31 +67,54 @@ function deleteCategory() {
   <AppNavigation>
     <div>
       <div class="header">
-        <strong class="header-title">Categories</strong>
+        <strong class="header-title">Ingredients</strong>
       </div>
       <div class="collections">
         <div class="flex justify-between pb-2 px-4">
           <div>
-            <strong class="text-xl">Category</strong>
-            <p>Categories Collection</p>
+            <strong class="text-xl">Ingredient</strong>
+            <p>Ingredients Collection</p>
           </div>
           <div>
             <button class="create-btn" @click="showCreateModal = true">Create</button>
             <Modal :show="showCreateModal" @close="showCreateModal = false">
               <template #default>
                 <div class="create-form">
-                  <h1 class="text-2xl font-bold mb-4">New Category</h1>
-                  <form @submit.prevent="createCategory">
+                  <h1 class="text-2xl font-bold mb-4">New Ingredient</h1>
+                  <form @submit.prevent="createIngredient">
                     <div class="flex flex-col gap-8">
-                      <div>
-                        <label for="name" class="block font-medium mb-2">Name</label>
+                      <div class="flex flex-col gap-4">
+                        <div>
+                          <label for="name" class="block font-medium mb-2">Name</label>
+                          <input
+                            type="text"
+                            id="name"
+                            v-model="name"
+                            class="border rounded w-full py-2 px-3"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label for="amount" class="block font-medium mb-2">Amount</label>
+                          <input
+                            type="number"
+                            id="amount"
+                            v-model="amount"
+                            class="border rounded w-full py-2 px-3"
+                            required
+                          />
+                        </div>
+                       <div>
+                        <label for="unit" class="block font-medium mb-2">Unit</label>
                         <input
                           type="text"
-                          id="name"
-                          v-model="name"
+                          id="unit"
+                          v-model="unit"
                           class="border rounded w-full py-2 px-3"
                           required
                         />
+                       </div>
+                       
                       </div>
                       <div class="flex justify-end space-x-2">
                         <button type="button" @click="showCreateModal = false" class="cancel-btn">
@@ -104,26 +135,30 @@ function deleteCategory() {
               <tr>
                 <th class="w-10">No</th>
                 <th>Name</th>
+                <th class="w-28">Amount</th>
+                <th class="w-32">Unit</th>
                 <th>Created At</th>
                 <th>Updated At</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(category, index) in categories" :key="category.id">
+              <tr v-for="(ingredient, index) in ingredients" :key="ingredient.id">
                 <td>{{ index + 1 }}</td>
-                <td>{{ category.name }}</td>
-                <td>{{ category.created_at }}</td>
-                <td>{{ category.updated_at }}</td>
+                <td>{{ ingredient.name }}</td>
+                <td>{{ ingredient.amount }}</td>
+                <td>{{ ingredient.unit }}</td>
+                <td>{{ ingredient.created_at }}</td>
+                <td>{{ ingredient.updated_at }}</td>
                 <td>
                   <div class="flex flex-row gap-4">
-                    <button class="update-btn" @click="$inertia.get(route('category.update', category.id))">
+                    <button class="update-btn" @click="$inertia.get(route('ingredient.update', ingredient.id))">
                       Update
                     </button>
                     <button
                       class="delete-btn"
                       @click="() => {
-                        selectedCategoryId = category.id;
+                        selectedIngredientId = ingredient.id;
                         showDeleteModal = true;
                       }"
                     >
@@ -140,10 +175,10 @@ function deleteCategory() {
       <Modal class="m-0" :show="showDeleteModal" @close="showDeleteModal = false">
         <template #default>
           <div class="p-8">
-            <h1 class="text-xl mb-4">Are you sure to delete this category?</h1>
+            <h1 class="text-xl mb-4">Are you sure to delete this ingredient?</h1>
             <div class="flex justify-end space-x-2">
               <button @click="showDeleteModal = false" class="cancel-btn">Cancel</button>
-              <button @click="deleteCategory" class="delete-btn">Delete</button>
+              <button @click="deleteIngredient" class="delete-btn">Delete</button>
             </div>
           </div>
         </template>

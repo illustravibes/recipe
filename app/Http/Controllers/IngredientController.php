@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 use App\Models\Ingredient;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class IngredientController extends Controller
 {
@@ -12,9 +13,8 @@ class IngredientController extends Controller
     public function index()
     {
         $ingredients = Ingredient::all();
-        return response()->json([
-            'status'=> 'success',
-            'data'=> $ingredients
+        return Inertia::render('Ingredient/Index', [
+            'ingredients' => $ingredients,
         ]);
         
     }
@@ -38,7 +38,7 @@ class IngredientController extends Controller
             'unit' => 'required|string',
         ]);
         $ingredient = Ingredient::create($validated);
-        return response()->json($ingredient, 201);
+        return redirect()->route('ingredient.index');
     }
 
     /**
@@ -79,6 +79,6 @@ class IngredientController extends Controller
     {
         $ingredient = INgredient::findOrFail($id);
         $ingredient->delete();
-        return response()->json(null, 204);
+        return redirect()->route('ingredient.index');
     }
 }
