@@ -57,4 +57,41 @@ class RecipeController extends Controller
 
         return redirect()->route('recipe.index');
     }
+
+    public function edit($id)
+{
+    $recipe = Recipe::with(['category', 'ingredients'])->findOrFail($id);
+    $categories = Category::all();
+    $ingredients = Ingredient::all();
+
+    return Inertia::render('Recipe/Edit', [
+        'recipe' => $recipe,
+        'categories' => $categories,
+        'ingredients' => $ingredients,
+    ]);
+}
+
+public function update(Request $request, string $id)
+{
+    // Validasi input
+    $validated = $request->validate([
+        'name' => 'required|string|max:255',
+        'description' => 'nullable|string',
+        'category_id' => 'required|exists:categories,id',
+        'ingredients' => 'required|array',
+        'ingredients.*' => 'exists:ingredients,id',
+    ]);
+
+    $recipe = Recipe::findOrFail($id);
+
+    $recipe->update([
+        'name' => $validated['name'],
+        'description' => $validated['description'] ?? null,
+        'category_id' => $validated['category_id'],
+    ]);
+
+    $recipe->ingredients()->sync($validated['ingredients']);
+
+    return redirect()->route('recipe.index');
+}
 }

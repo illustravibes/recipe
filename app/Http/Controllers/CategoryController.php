@@ -61,10 +61,14 @@ class CategoryController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $request->validate(['name' => 'required:categories,name,'.$id]);
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
         $category = Category::findOrFail($id);
-        $category->update(['name' => $request->name]);
-        return response()->json($category);
+        $category->update(['name' => $validated['name']]);
+        
+        return redirect()->route('category.index');
+        
     }
 
     /**

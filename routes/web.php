@@ -17,7 +17,7 @@ Route::get('/categories', [CategoryController::class, 'index'])->name('category.
 Route::post('/categories', [CategoryController::class, 'create'])->name('category.create');
 Route::delete('/categories/{id}', [CategoryController::class, 'destroy'])->name('category.destroy');
 Route::post('/categories', [CategoryController::class, 'store'])->name('category.store');
-Route::put('/categories', [CategoryController::class, 'update'])->name('category.update');
+Route::put('/categories{id}', [CategoryController::class, 'update'])->name('category.update');
 
 Route::get('/ingredients', [IngredientController::class, 'index'])->name('ingredient.index');
 Route::post('/ingredients/create', [IngredientController::class, 'create'])->name('ingredient.create');
@@ -27,4 +27,7 @@ Route::put('/ingredients', [IngredientController::class, 'update'])->name('ingre
 
 Route::get('/recipes', [RecipeController::class, 'index'])->name('recipe.index');
 Route::post('/recipes', [RecipeController::class, 'store'])->name('recipe.store');
+Route::get('/recipes/{id}/edit', [RecipeController::class, 'edit'])->name('recipe.edit');
+Route::put('/recipes/{id}', [RecipeController::class, 'update'])->name('recipe.update');
+
 require __DIR__.'/auth.php';

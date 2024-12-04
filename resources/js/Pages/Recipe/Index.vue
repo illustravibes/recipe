@@ -4,11 +4,12 @@ import { router } from '@inertiajs/vue3';
 import { PropType, ref, watchEffect } from 'vue';
 
 const showCreateModal = ref(false);
+const showUpdateModal = ref(false);
 const showDeleteModal = ref(false);
 
 const name = ref<string>('');
 const description = ref<string>();
-const selectedRecipeId = ref<number | null>(null);
+const id = ref<number | null>(null);
 const category_id = ref<number | null>(null);
 const selectedIngredients = ref<number[]>([]);
 
@@ -19,11 +20,16 @@ interface TIngredient {
   unit: string;
 }
 
+interface TCategory {
+  id: number;
+  name: string;
+}
+
 interface TRecipe {
   id: number;
   name: string;
   description: string | null;
-  category: object;
+  category: TCategory;
   ingredients: TIngredient[];
   created_at: string;
   updated_at: string;
@@ -39,7 +45,9 @@ defineProps({
     default: () => [],
   },
   ingredients: {
-    type: Array as PropType<{ id: number; name: string; amount: number; unit: string; }[]>,
+    type: Array as PropType<
+      { id: number; name: string; amount: number; unit: string }[]
+    >,
     default: () => [],
   },
 });
@@ -60,6 +68,10 @@ function createRecipe() {
     {
       onSuccess: () => {
         showCreateModal.value = false;
+        name.value = '';
+        description.value = '';
+        category_id.value = null;
+        selectedIngredients.value = [];
       },
       onError: (errors: any) => {
         console.error('Error creating recipe:', errors);
@@ -68,12 +80,48 @@ function createRecipe() {
   );
 }
 
+function updateRecipe() {
+  if (!id.value) return;
+
+  router.put(
+    route('recipe.update', id.value),
+    {
+      name: name.value,
+      description: description.value,
+      category_id: category_id.value,
+      ingredients: selectedIngredients.value,
+    },
+    {
+      onSuccess: () => {
+        showUpdateModal.value = false;
+        id.value = null;
+        name.value = '';
+        description.value = '';
+        category_id.value = null;
+        selectedIngredients.value = [];
+      },
+      onError: (errors: any) => {
+        console.error('Error updating recipe:', errors);
+      },
+    },
+  );
+}
+
+function prepareUpdateModal(recipe: TRecipe) {
+  id.value = recipe.id;
+  name.value = recipe.name;
+  description.value = recipe.description || '';
+  category_id.value = recipe.category.id;
+  selectedIngredients.value = recipe.ingredients.map((ing) => ing.id);
+  showUpdateModal.value = true;
+}
+
 function deleteRecipe() {
-  if (!selectedRecipeId.value) return;
-  router.delete(route('recipe.destroy', selectedRecipeId.value), {
+  if (!id.value) return;
+  router.delete(route('recipe.destroy', id.value), {
     onSuccess: () => {
       showDeleteModal.value = false;
-      selectedRecipeId.value = null;
+      id.value = null;
     },
     onError: (errors: any) => {
       console.error('Error deleting recipe:', errors);
@@ -100,7 +148,7 @@ function deleteRecipe() {
             </button>
             <Modal :show="showCreateModal" @close="showCreateModal = false">
               <template #default>
-                <div class="create-form">
+                <div class="form">
                   <h1 class="mb-4 text-2xl font-bold">New Recipe</h1>
                   <form @submit.prevent="createRecipe">
                     <div class="flex flex-col gap-8">
@@ -221,7 +269,7 @@ function deleteRecipe() {
                   <div class="flex flex-row gap-4">
                     <button
                       class="update-btn"
-                      @click="$inertia.get(route('recipe.update', recipe.id))"
+                      @click="prepareUpdateModal(recipe)"
                     >
                       Update
                     </button>
@@ -229,7 +277,7 @@ function deleteRecipe() {
                       class="delete-btn"
                       @click="
                         () => {
-                          selectedRecipeId = recipe.id;
+                          id = recipe.id;
                           showDeleteModal = true;
                         }
                       "
@@ -261,6 +309,87 @@ function deleteRecipe() {
           </div>
         </template>
       </Modal>
+
+      <Modal :show="showUpdateModal" @close="showUpdateModal = false">
+        <template #default>
+          <div class="form">
+            <h1 class="mb-4 text-2xl font-bold">New Recipe</h1>
+            <form @submit.prevent="updateRecipe">
+              <div class="flex flex-col gap-8">
+                <div class="flex flex-col gap-4">
+                  <div>
+                    <label for="name" class="mb-2 block font-medium"
+                      >Name</label
+                    >
+                    <input
+                      type="text"
+                      id="name"
+                      v-model="name"
+                      class="w-full rounded border px-3 py-2"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label for="description" class="mb-2 block font-medium"
+                      >Description</label
+                    >
+                    <input
+                      type="text"
+                      id="decription"
+                      cols="40"
+                      rows="5"
+                      v-model="description"
+                      class="w-full rounded border px-3 py-2"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label class="mb-2 block font-medium" for="category_id"
+                      >Category</label
+                    >
+                    <select
+                      class="w-full rounded border px-3 py-2"
+                      id="category_id"
+                      v-model="category_id"
+                    >
+                      <option
+                        v-for="category in categories"
+                        :value="category.id"
+                        :key="category.id"
+                      >
+                        {{ category.name }}
+                      </option>
+                    </select>
+                  </div>
+                  <div>
+                    <label>Ingredients: </label>
+                    <div v-for="ingredient in ingredients" :key="ingredient.id">
+                      <input
+                        type="checkbox"
+                        :value="ingredient.id"
+                        v-model="selectedIngredients"
+                      />
+                      <label>{{
+                        `${ingredient.name} ${ingredient.amount} ${ingredient.unit}`
+                      }}</label>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex justify-end space-x-2">
+                  <button
+                    type="button"
+                    @click="showUpdateModal = false"
+                    class="cancel-btn"
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" class="create-btn">Save</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </template>
+      </Modal>
     </div>
   </AppNavigation>
 </template>
@@ -282,7 +411,7 @@ function deleteRecipe() {
   @apply w-full;
 }
 
-.create-form {
+.form {
   @apply p-8;
 }
 

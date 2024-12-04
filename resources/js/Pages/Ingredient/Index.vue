@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { AppNavigation, Modal } from '@/Components';
 import { router } from '@inertiajs/vue3';
-import { PropType, ref } from 'vue';
+import { PropType, ref, watchEffect } from 'vue';
 
 const showCreateModal = ref(false);
+const showUpdateModal = ref(false);
 const showDeleteModal = ref(false);
 
 const name = ref<string>('');
 const amount = ref<number>();
 const unit = ref<string>('');
-const selectedIngredientId = ref<number | null>(null);
+const id = ref<number | null>(null);
 
 interface TIngredient {
   id: number;
@@ -38,6 +39,9 @@ function createIngredient() {
     {
       onSuccess: () => {
         showCreateModal.value = false;
+        name.value = '';
+        amount.value = 0;
+        unit.value = '';
       },
       onError: (errors: any) => {
         console.error('Error creating ingredient:', errors);
@@ -46,18 +50,56 @@ function createIngredient() {
   );
 }
 
+function updateIngredient() {
+  if (!id.value) return;
+
+  router.put(
+    route('ingredient.update', id.value),
+    {
+      name: name.value,
+      amount: amount.value,
+      unit: unit.value,
+    },
+    {
+      onSuccess: () => {
+        showUpdateModal.value = false;
+        id.value = null;
+        name.value = '';
+        amount.value = 0;
+        unit.value = '';
+      },
+      onError: (errors: any) => {
+        console.error('Error updating ingredient:', errors);
+      },
+    },
+  );
+}
+
+function prepareUpdateModal(recipe: TIngredient) {
+  id.value = recipe.id;
+  name.value = recipe.name;
+  amount.value = recipe.amount;
+  unit.value = recipe.unit;
+  showUpdateModal.value = true;
+}
+
 function deleteIngredient() {
-  if (!selectedIngredientId.value) return;
-  router.delete(route('ingredient.destroy', selectedIngredientId.value), {
+  if (!id.value) return;
+  router.delete(route('ingredient.destroy', id.value), {
     onSuccess: () => {
       showDeleteModal.value = false;
-      selectedIngredientId.value = null;
+      id.value = null;
     },
     onError: (errors: any) => {
       console.error('Error deleting ingredient:', errors);
     },
   });
 }
+
+watchEffect(() => {
+  console.log('update', showUpdateModal.value);
+  console.log('create', showCreateModal.value);
+})
 </script>
 
 <template>
@@ -76,65 +118,6 @@ function deleteIngredient() {
             <button class="create-btn" @click="showCreateModal = true">
               Create
             </button>
-            <Modal :show="showCreateModal" @close="showCreateModal = false">
-              <template #default>
-                <div class="create-form">
-                  <h1 class="mb-4 text-2xl font-bold">New Ingredient</h1>
-                  <form @submit.prevent="createIngredient">
-                    <div class="flex flex-col gap-8">
-                      <div class="flex flex-col gap-4">
-                        <div>
-                          <label for="name" class="mb-2 block font-medium"
-                            >Name</label
-                          >
-                          <input
-                            type="text"
-                            id="name"
-                            v-model="name"
-                            class="w-full rounded border px-3 py-2"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <label for="amount" class="mb-2 block font-medium"
-                            >Amount</label
-                          >
-                          <input
-                            type="number"
-                            id="amount"
-                            v-model="amount"
-                            class="w-full rounded border px-3 py-2"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <label for="unit" class="mb-2 block font-medium"
-                            >Unit</label
-                          >
-                          <input
-                            type="text"
-                            id="unit"
-                            v-model="unit"
-                            class="w-full rounded border px-3 py-2"
-                            required
-                          />
-                        </div>
-                      </div>
-                      <div class="flex justify-end space-x-2">
-                        <button
-                          type="button"
-                          @click="showCreateModal = false"
-                          class="cancel-btn"
-                        >
-                          Cancel
-                        </button>
-                        <button type="submit" class="create-btn">Save</button>
-                      </div>
-                    </div>
-                  </form>
-                </div>
-              </template>
-            </Modal>
           </div>
         </div>
         <div class="table">
@@ -165,9 +148,7 @@ function deleteIngredient() {
                   <div class="flex flex-row gap-4">
                     <button
                       class="update-btn"
-                      @click="
-                        $inertia.get(route('ingredient.update', ingredient.id))
-                      "
+                      @click="prepareUpdateModal(ingredient)"
                     >
                       Update
                     </button>
@@ -175,7 +156,7 @@ function deleteIngredient() {
                       class="delete-btn"
                       @click="
                         () => {
-                          selectedIngredientId = ingredient.id;
+                          id = ingredient.id;
                           showDeleteModal = true;
                         }
                       "
@@ -189,6 +170,126 @@ function deleteIngredient() {
           </table>
         </div>
       </div>
+
+      <Modal :show="showCreateModal" @close="showCreateModal = false">
+        <template #default>
+          <div class="form">
+            <h1 class="mb-4 text-2xl font-bold">New Ingredient</h1>
+            <form @submit.prevent="createIngredient">
+              <div class="flex flex-col gap-8">
+                <div class="flex flex-col gap-4">
+                  <div>
+                    <label for="name" class="mb-2 block font-medium"
+                      >Name</label
+                    >
+                    <input
+                      type="text"
+                      id="name"
+                      v-model="name"
+                      class="w-full rounded border px-3 py-2"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label for="amount" class="mb-2 block font-medium"
+                      >Amount</label
+                    >
+                    <input
+                      type="number"
+                      id="amount"
+                      v-model="amount"
+                      class="w-full rounded border px-3 py-2"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label for="unit" class="mb-2 block font-medium"
+                      >Unit</label
+                    >
+                    <input
+                      type="text"
+                      id="unit"
+                      v-model="unit"
+                      class="w-full rounded border px-3 py-2"
+                      required
+                    />
+                  </div>
+                </div>
+                <div class="flex justify-end space-x-2">
+                  <button
+                    type="button"
+                    @click="showCreateModal = false"
+                    class="cancel-btn"
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" class="create-btn">Save</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </template>
+      </Modal>
+
+      <Modal :show="showUpdateModal" @close="showUpdateModal = false">
+        <template #default>
+          <div class="form">
+            <h1 class="mb-4 text-2xl font-bold">Update Ingredient</h1>
+            <form @submit.prevent="updateIngredient">
+              <div class="flex flex-col gap-8">
+                <div class="flex flex-col gap-4">
+                  <div>
+                    <label for="name" class="mb-2 block font-medium"
+                      >Name</label
+                    >
+                    <input
+                      type="text"
+                      id="name"
+                      v-model="name"
+                      class="w-full rounded border px-3 py-2"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label for="amount" class="mb-2 block font-medium"
+                      >Amount</label
+                    >
+                    <input
+                      type="number"
+                      id="amount"
+                      v-model="amount"
+                      class="w-full rounded border px-3 py-2"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label for="unit" class="mb-2 block font-medium"
+                      >Unit</label
+                    >
+                    <input
+                      type="text"
+                      id="unit"
+                      v-model="unit"
+                      class="w-full rounded border px-3 py-2"
+                      required
+                    />
+                  </div>
+                </div>
+                <div class="flex justify-end space-x-2">
+                  <button
+                    type="button"
+                    @click="showUpdateModal = false"
+                    class="cancel-btn"
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" class="create-btn">Save</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </template>
+      </Modal>
 
       <Modal
         class="m-0"
@@ -232,7 +333,7 @@ function deleteIngredient() {
   @apply w-full;
 }
 
-.create-form {
+.form {
   @apply p-8;
 }
 

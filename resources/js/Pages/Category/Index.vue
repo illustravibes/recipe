@@ -4,10 +4,11 @@ import { router } from '@inertiajs/vue3';
 import { PropType, ref } from 'vue';
 
 const showCreateModal = ref(false);
+const showUpdateModal = ref(false);
 const showDeleteModal = ref(false);
 
 const name = ref<string>('');
-const selectedCategoryId = ref<number | null>(null);
+const id = ref<number | null>(null);
 
 interface TCategory {
   id: number;
@@ -30,6 +31,7 @@ function createCategory() {
     {
       onSuccess: () => {
         showCreateModal.value = false;
+        name.value = '';
       },
       onError: (errors: any) => {
         console.error('Error creating category:', errors);
@@ -38,12 +40,39 @@ function createCategory() {
   );
 }
 
+function updateCategory() {
+  if (!id.value) return;
+
+  router.put(
+    route('category.update', id.value),
+    {
+      name: name.value,
+    },
+    {
+      onSuccess: () => {
+        showUpdateModal.value = false;
+        id.value = null;
+        name.value = '';
+      },
+      onError: (errors: any) => {
+        console.error('Error updating category:', errors);
+      },
+    },
+  );
+}
+
+function prepareUpdateModal(category: TCategory) {
+  id.value = category.id;
+  name.value = category.name;
+  showUpdateModal.value = true;
+}
+
 function deleteCategory() {
-  if (!selectedCategoryId.value) return;
-  router.delete(route('category.destroy', selectedCategoryId.value), {
+  if (!id.value) return;
+  router.delete(route('category.destroy', id.value), {
     onSuccess: () => {
       showDeleteModal.value = false;
-      selectedCategoryId.value = null;
+      id.value = null;
     },
     onError: (errors: any) => {
       console.error('Error deleting category:', errors);
@@ -70,7 +99,7 @@ function deleteCategory() {
             </button>
             <Modal :show="showCreateModal" @close="showCreateModal = false">
               <template #default>
-                <div class="create-form">
+                <div class="form">
                   <h1 class="mb-4 text-2xl font-bold">New Category</h1>
                   <form @submit.prevent="createCategory">
                     <div class="flex flex-col gap-8">
@@ -124,9 +153,7 @@ function deleteCategory() {
                   <div class="flex flex-row gap-4">
                     <button
                       class="update-btn"
-                      @click="
-                        $inertia.get(route('category.update', category.id))
-                      "
+                      @click="prepareUpdateModal(category)"
                     >
                       Update
                     </button>
@@ -134,7 +161,7 @@ function deleteCategory() {
                       class="delete-btn"
                       @click="
                         () => {
-                          selectedCategoryId = category.id;
+                          id = category.id;
                           showDeleteModal = true;
                         }
                       "
@@ -148,6 +175,38 @@ function deleteCategory() {
           </table>
         </div>
       </div>
+
+      <Modal :show="showUpdateModal" @close="showUpdateModal = false">
+        <template #default>
+          <div class="form">
+            <h1 class="mb-4 text-2xl font-bold">Update Category</h1>
+            <form @submit.prevent="updateCategory">
+              <div class="flex flex-col gap-8">
+                <div>
+                  <label for="name" class="mb-2 block font-medium">Name</label>
+                  <input
+                    type="text"
+                    id="name"
+                    v-model="name"
+                    class="w-full rounded border px-3 py-2"
+                    required
+                  />
+                </div>
+                <div class="flex justify-end space-x-2">
+                  <button
+                    type="button"
+                    @click="showUpdateModal = false"
+                    class="cancel-btn"
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" class="create-btn">Save</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </template>
+      </Modal>
 
       <Modal
         class="m-0"
@@ -187,7 +246,7 @@ function deleteCategory() {
   @apply w-full;
 }
 
-.create-form {
+.form {
   @apply p-8;
 }
 
