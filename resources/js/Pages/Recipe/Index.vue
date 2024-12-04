@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import { AppNavigation, Modal } from '@/Components';
 import { router } from '@inertiajs/vue3';
-import { PropType, ref, watchEffect } from 'vue';
+import { computed, PropType, ref, watchEffect } from 'vue';
 
 const showCreateModal = ref(false);
 const showUpdateModal = ref(false);
 const showDeleteModal = ref(false);
+const showQueryModal = ref(false);
 
 const name = ref<string>('');
 const description = ref<string>();
 const id = ref<number | null>(null);
 const category_id = ref<number | null>(null);
 const selectedIngredients = ref<number[]>([]);
+const searchQuery = ref<string>('');
+const selectedCategory = ref<number | null>(null);
 
 interface TIngredient {
   id: number;
@@ -35,7 +38,7 @@ interface TRecipe {
   updated_at: string;
 }
 
-defineProps({
+const props = defineProps({
   recipes: {
     type: Array as PropType<TRecipe[]>,
     default: () => [],
@@ -128,6 +131,26 @@ function deleteRecipe() {
     },
   });
 }
+
+const filteredRecipes = computed(() => {
+  return props.recipes.filter((recipe) => {
+    const matchesSearchQuery = recipe.name
+      .toLowerCase()
+      .includes(searchQuery.value.toLowerCase());
+
+    const matchesCategory = selectedCategory.value
+      ? recipe.category.id === selectedCategory.value
+      : true;
+
+    const matchesIngredients = selectedIngredients.value.length
+      ? recipe.ingredients.some((ingredient) =>
+          selectedIngredients.value.includes(ingredient.id),
+        )
+      : true;
+
+    return matchesSearchQuery && matchesCategory && matchesIngredients;
+  });
+});
 </script>
 
 <template>
@@ -142,99 +165,25 @@ function deleteRecipe() {
             <strong class="text-xl">Recipe</strong>
             <p>Recipes Collection</p>
           </div>
-          <div>
+          <div class="flex space-x-4">
+            <input
+              type="text"
+              v-model="searchQuery"
+              placeholder="Search..."
+              class="max-h-10 rounded border px-3"
+            />
+            <button
+              class="max-h-10 rounded-md bg-zinc-300 px-3"
+              @click="showQueryModal = true"
+            >
+              Filter
+            </button>
             <button class="create-btn" @click="showCreateModal = true">
               Create
             </button>
-            <Modal :show="showCreateModal" @close="showCreateModal = false">
-              <template #default>
-                <div class="form">
-                  <h1 class="mb-4 text-2xl font-bold">New Recipe</h1>
-                  <form @submit.prevent="createRecipe">
-                    <div class="flex flex-col gap-8">
-                      <div class="flex flex-col gap-4">
-                        <div>
-                          <label for="name" class="mb-2 block font-medium"
-                            >Name</label
-                          >
-                          <input
-                            type="text"
-                            id="name"
-                            v-model="name"
-                            class="w-full rounded border px-3 py-2"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <label
-                            for="description"
-                            class="mb-2 block font-medium"
-                            >Description</label
-                          >
-                          <input
-                            type="text"
-                            id="decription"
-                            cols="40"
-                            rows="5"
-                            v-model="description"
-                            class="w-full rounded border px-3 py-2"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <label
-                            class="mb-2 block font-medium"
-                            for="category_id"
-                            >Category</label
-                          >
-                          <select
-                            class="w-full rounded border px-3 py-2"
-                            id="category_id"
-                            v-model="category_id"
-                          >
-                            <option
-                              v-for="category in categories"
-                              :value="category.id"
-                              :key="category.id"
-                            >
-                              {{ category.name }}
-                            </option>
-                          </select>
-                        </div>
-                        <div>
-                          <label>Ingredients: </label>
-                          <div
-                            v-for="ingredient in ingredients"
-                            :key="ingredient.id"
-                          >
-                            <input
-                              type="checkbox"
-                              :value="ingredient.id"
-                              v-model="selectedIngredients"
-                            />
-                            <label>{{
-                              `${ingredient.name} ${ingredient.amount} ${ingredient.unit}`
-                            }}</label>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="flex justify-end space-x-2">
-                        <button
-                          type="button"
-                          @click="showCreateModal = false"
-                          class="cancel-btn"
-                        >
-                          Cancel
-                        </button>
-                        <button type="submit" class="create-btn">Save</button>
-                      </div>
-                    </div>
-                  </form>
-                </div>
-              </template>
-            </Modal>
           </div>
         </div>
+
         <div class="table">
           <table>
             <thead>
@@ -248,7 +197,7 @@ function deleteRecipe() {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(recipe, index) in recipes" :key="recipe.id">
+              <tr v-for="(recipe, index) in filteredRecipes" :key="recipe.id">
                 <td>{{ index + 1 }}</td>
                 <td>{{ recipe.name }}</td>
                 <td>{{ recipe.description }}</td>
@@ -292,20 +241,83 @@ function deleteRecipe() {
         </div>
       </div>
 
-      <Modal
-        class="m-0"
-        :show="showDeleteModal"
-        @close="showDeleteModal = false"
-      >
+      <Modal :show="showCreateModal" @close="showCreateModal = false">
         <template #default>
-          <div class="p-8">
-            <h1 class="mb-4 text-xl">Are you sure to delete this recipe?</h1>
-            <div class="flex justify-end space-x-2">
-              <button @click="showDeleteModal = false" class="cancel-btn">
-                Cancel
-              </button>
-              <button @click="deleteRecipe" class="delete-btn">Delete</button>
-            </div>
+          <div class="form">
+            <h1 class="mb-4 text-2xl font-bold">New Recipe</h1>
+            <form @submit.prevent="createRecipe">
+              <div class="flex flex-col gap-8">
+                <div class="flex flex-col gap-4">
+                  <div>
+                    <label for="name" class="mb-2 block font-medium"
+                      >Name</label
+                    >
+                    <input
+                      type="text"
+                      id="name"
+                      v-model="name"
+                      class="w-full rounded border px-3 py-2"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label for="description" class="mb-2 block font-medium"
+                      >Description</label
+                    >
+                    <input
+                      type="text"
+                      id="decription"
+                      cols="40"
+                      rows="5"
+                      v-model="description"
+                      class="w-full rounded border px-3 py-2"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label class="mb-2 block font-medium" for="category_id"
+                      >Category</label
+                    >
+                    <select
+                      class="w-full rounded border px-3 py-2"
+                      id="category_id"
+                      v-model="category_id"
+                    >
+                      <option
+                        v-for="category in categories"
+                        :value="category.id"
+                        :key="category.id"
+                      >
+                        {{ category.name }}
+                      </option>
+                    </select>
+                  </div>
+                  <div>
+                    <label>Ingredients: </label>
+                    <div v-for="ingredient in ingredients" :key="ingredient.id">
+                      <input
+                        type="checkbox"
+                        :value="ingredient.id"
+                        v-model="selectedIngredients"
+                      />
+                      <label>{{
+                        `${ingredient.name} ${ingredient.amount} ${ingredient.unit}`
+                      }}</label>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex justify-end space-x-2">
+                  <button
+                    type="button"
+                    @click="showCreateModal = false"
+                    class="cancel-btn"
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" class="create-btn">Save</button>
+                </div>
+              </div>
+            </form>
           </div>
         </template>
       </Modal>
@@ -390,6 +402,70 @@ function deleteRecipe() {
           </div>
         </template>
       </Modal>
+
+      <Modal
+        class="m-0"
+        :show="showDeleteModal"
+        @close="showDeleteModal = false"
+      >
+        <template #default>
+          <div class="p-8">
+            <h1 class="mb-4 text-xl">Are you sure to delete this recipe?</h1>
+            <div class="flex justify-end space-x-2">
+              <button @click="showDeleteModal = false" class="cancel-btn">
+                Cancel
+              </button>
+              <button @click="deleteRecipe" class="delete-btn">Delete</button>
+            </div>
+          </div>
+        </template>
+      </Modal>
+
+      <Modal class="m-0" :show="showQueryModal" @close="showQueryModal = false">
+        <template #default>
+          <div class="flex flex-col gap-8 p-8">
+            <div class="flex flex-row justify-between">
+              <strong>Filter</strong>
+              <button
+                type="button"
+                @click="showQueryModal = false"
+                class="cancel-btn"
+              >
+                Cancel
+              </button>
+            </div>
+            <div class="w-full">
+              <label class="text-md font-bold">Select Category: </label>
+              <select
+                v-model="selectedCategory"
+                class="w-full rounded border px-3"
+              >
+                <option value="">-</option>
+                <option
+                  v-for="category in categories"
+                  :key="category.id"
+                  :value="category.id"
+                >
+                  {{ category.name }}
+                </option>
+              </select>
+            </div>
+            <div class="flex flex-col gap-2">
+              <label class="text-md font-bold">Ingredients: </label>
+              <div v-for="ingredient in ingredients" :key="ingredient.id">
+                <input
+                  type="checkbox"
+                  :value="ingredient.id"
+                  v-model="selectedIngredients"
+                />
+                <label class="pl-4">{{
+                  `${ingredient.name} ${ingredient.amount} ${ingredient.unit}`
+                }}</label>
+              </div>
+            </div>
+          </div>
+        </template>
+      </Modal>
     </div>
   </AppNavigation>
 </template>
@@ -416,7 +492,7 @@ function deleteRecipe() {
 }
 
 .create-btn {
-  @apply rounded-md border bg-green-600 px-4 py-1 font-bold text-white;
+  @apply max-h-10 rounded-md border bg-green-600 px-4 font-bold text-white;
 }
 
 .update-btn {
