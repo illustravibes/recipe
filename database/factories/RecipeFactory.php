@@ -4,12 +4,12 @@ namespace Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use App\Models\Category;
+
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Category>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Recipe>
  */
-class CategoryFactory extends Factory
-{  
-    protected $model = Category::class;
+class RecipeFactory extends Factory
+{
     /**
      * Define the model's default state.
      *
@@ -18,7 +18,9 @@ class CategoryFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => $this->faker->word
+            'name' => $this->faker->sentence,
+            'description' => $this->faker->paragraph,
+            'category_id' => Category::factory(),
         ];
     }
 }

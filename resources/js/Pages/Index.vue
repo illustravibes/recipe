@@ -40,11 +40,11 @@ export default {
       </div>
       <div class="body">
         <div v-for="(navigation, index) in navigations" :key="index">
-          <router-link :href="navigation.to">
+          <a :href="navigation.to">
             <div class="card">
               <h1>{{ navigation.label }}</h1>
             </div>
-          </router-link>
+          </a>
         </div>
       </div>
     </div>

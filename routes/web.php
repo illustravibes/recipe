@@ -5,6 +5,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\IngredientController;
+use App\Http\Controllers\RecipeController;
 
 use Inertia\Inertia;
 
@@ -24,4 +25,6 @@ Route::delete('/ingredients/{id}', [IngredientController::class, 'destroy'])->na
 Route::post('/ingredients', [IngredientController::class, 'store'])->name('ingredient.store');
 Route::put('/ingredients', [IngredientController::class, 'update'])->name('ingredient.update');
 
+Route::get('/recipes', [RecipeController::class, 'index'])->name('recipe.index');
+Route::post('/recipes', [RecipeController::class, 'store'])->name('recipe.store');
 require __DIR__.'/auth.php';
